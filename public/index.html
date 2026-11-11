@@ -1,0 +1,2433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shop Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛍️</text></svg>">
+<style>
+  :root {
+    --brand: #0f9d6b;
+    --brand-dark: #0b7a53;
+    --brand-soft: #e7f7f0;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --danger: #dc2626;
+    --warn: #f59e0b;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(15,23,42,.05), 0 4px 14px rgba(15,23,42,.06);
+    --header-h: 62px;
+    --sidebar-w: 232px;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: "Inter", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.45;
+  }
+
+  /* Soft background on login, loading and setup screens */
+  body:has(#authScreen:not(.hidden)),
+  body:has(#setupScreen:not(.hidden)),
+  body:has(#loadingScreen:not(.hidden)) {
+    background: linear-gradient(160deg, #d9f4e8 0%, #eef6ff 100%);
+    min-height: 100vh;
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    background: linear-gradient(135deg, var(--brand-dark), var(--brand));
+    color: #fff;
+    height: var(--header-h);
+    padding: 0 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    box-shadow: 0 2px 10px rgba(0,0,0,.15);
+  }
+  header h1 { font-size: 19px; margin: 0; font-weight: 700; letter-spacing: .2px; }
+  #userEmail {
+    display: inline-block;
+    max-width: 170px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+    opacity: .9;
+  }
+  #saveStatus { opacity: .85; font-style: italic; }
+
+  /* ---------- Sidebar navigation ---------- */
+  .shell { display: flex; align-items: flex-start; }
+  nav {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    padding: 18px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: sticky;
+    top: var(--header-h);
+    height: calc(100vh - var(--header-h));
+    overflow-y: auto;
+  }
+  nav button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    background: none;
+    color: var(--muted);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    position: relative;
+    filter: none;
+  }
+  nav button .ico { width: 20px; height: 20px; }
+  nav button:hover { background: var(--brand-soft); color: var(--brand-dark); filter: none; }
+  nav button.active { background: var(--brand-soft); color: var(--brand-dark); }
+  nav button.active::before {
+    content: "";
+    position: absolute;
+    left: -12px; top: 8px; bottom: 8px;
+    width: 4px;
+    border-radius: 0 4px 4px 0;
+    background: var(--brand);
+  }
+
+  /* ---------- Main area ---------- */
+  main { flex: 1; min-width: 0; padding: 26px 32px 60px; }
+  main > div { max-width: 1100px; margin-left: auto; margin-right: auto; }
+
+  /* Welcome banner (uses images/hero1.jpg, falls back to green) */
+  .banner {
+    margin-bottom: 22px;
+    border-radius: var(--radius);
+    padding: 26px 28px;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    background:
+      linear-gradient(135deg, rgba(4,60,45,.88), rgba(15,157,107,.6)),
+      url("images/hero1.jpg") center / cover,
+      linear-gradient(135deg, #064e3b, #0f9d6b);
+    box-shadow: var(--shadow);
+  }
+  .banner-hi { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+  .banner-sub { opacity: .9; font-size: 14px; margin-top: 4px; }
+  .banner-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .banner-btn { background: #fff; color: var(--brand-dark); }
+
+  /* ---------- Summary cards ---------- */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 22px; }
+  .kpi {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: var(--shadow);
+  }
+  .kpi-icon { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0; }
+  .kpi-icon .ico { width: 22px; height: 22px; }
+  .ic-green { background: #dcfce7; color: #15803d; }
+  .ic-blue { background: #dbeafe; color: #1d4ed8; }
+  .ic-amber { background: #fef3c7; color: #b45309; }
+  .ic-red { background: #fee2e2; color: #b91c1c; }
+  .ic-purple { background: #ede9fe; color: #6d28d9; }
+  .kpi-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+  .kpi-value { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin-top: 2px; }
+
+  /* ---------- Cards ---------- */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 22px;
+    margin-bottom: 22px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+  }
+  h2 { margin: 0 0 16px; font-size: 17px; font-weight: 700; }
+  .total-line { font-size: 18px; font-weight: 700; color: var(--brand-dark); margin: 16px 0 0; }
+
+  /* ---------- Forms ---------- */
+  label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+  input, select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #fff;
+    color: var(--text);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(15,157,107,.18);
+  }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+  .actions { margin-top: 18px; }
+
+  /* ---------- Buttons ---------- */
+  button {
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    padding: 11px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    transition: filter .15s, transform .05s;
+  }
+  button:hover { filter: brightness(1.08); }
+  button:active { transform: scale(.98); }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  button.small { padding: 6px 11px; font-size: 12px; margin-right: 4px; border-radius: 8px; }
+  button.danger { background: var(--danger); }
+  button.secondary { background: #f1f5f9; color: var(--text); }
+  button.secondary:hover { background: #e2e8f0; filter: none; }
+  button.light {
+    background: rgba(255,255,255,.16);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,.4);
+  }
+  button.light:hover { background: rgba(255,255,255,.28); }
+  button.link {
+    background: none;
+    color: var(--brand-dark);
+    padding: 0;
+    font-weight: 600;
+    text-decoration: underline;
+    filter: none;
+  }
+  .dl-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* ---------- Tables ---------- */
+  .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 13px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th {
+    background: #f8fafc;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    color: var(--muted);
+  }
+  tbody tr:hover { background: #f8fafc; }
+  tbody tr:last-child td { border-bottom: none; }
+  tr.low, tr.low:hover { background: #fef2f2; }
+  tr.low td:first-child { border-left: 3px solid var(--danger); }
+
+  .item-name { font-weight: 600; }
+  .cat { background: #f1f5f9; color: #475569; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .qty { font-weight: 600; }
+  .qty-low { color: var(--danger); }
+  .who { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--brand-soft); color: var(--brand-dark);
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+  }
+  .owed { color: var(--danger); }
+
+  .empty { text-align: center; color: var(--muted); padding: 36px 18px; white-space: normal; }
+  .empty .ico { width: 34px; height: 34px; display: block; margin: 0 auto 8px; opacity: .45; }
+  .empty-sm { color: var(--muted); padding: 10px 0; font-size: 14px; }
+
+  /* ---------- Badges and tags ---------- */
+  .badge {
+    background: var(--danger);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 20px;
+    margin-left: 6px;
+  }
+  .tag { padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; }
+  .tag.paid { background: var(--brand); }
+  .tag.credit { background: var(--warn); }
+
+  /* ---------- Reports ---------- */
+  .report-head { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .muted-sm { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .seg { display: inline-flex; background: #f1f5f9; border-radius: 12px; padding: 4px; gap: 4px; flex-wrap: wrap; }
+  .seg button { background: none; color: var(--muted); padding: 8px 14px; border-radius: 9px; font-size: 13px; }
+  .seg button:hover { filter: none; color: var(--brand-dark); }
+  .seg button.active { background: #fff; color: var(--brand-dark); box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+  .chart { display: flex; align-items: flex-end; gap: 6px; min-height: 230px; overflow-x: auto; padding-top: 8px; }
+  .bar-col { flex: 1; min-width: 14px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; }
+  .bar {
+    width: 100%; max-width: 48px;
+    background: linear-gradient(180deg, var(--brand), var(--brand-dark));
+    border-radius: 8px 8px 3px 3px;
+    transition: height .3s;
+  }
+  .bar.zero { background: #e2e8f0; }
+  .bar-val { font-size: 11px; font-weight: 700; }
+  .bar-lbl { font-size: 11px; color: var(--muted); white-space: nowrap; height: 14px; }
+  .report-note { margin: 14px 0 0; font-size: 13px; color: var(--muted); }
+
+  /* ---------- Best sellers ---------- */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .top-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .top-row:last-child { border-bottom: none; }
+  .top-rank {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--brand-soft); color: var(--brand-dark);
+    display: grid; place-items: center;
+    font-size: 13px; font-weight: 800; flex-shrink: 0;
+  }
+  .top-rank.warn { background: #fef3c7; color: #b45309; }
+  .top-main { flex: 1; min-width: 0; }
+  .top-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .top-name small { color: var(--muted); font-weight: 500; font-size: 12px; margin-left: 6px; }
+  .top-bar { height: 6px; background: #f1f5f9; border-radius: 6px; margin-top: 8px; overflow: hidden; }
+  .top-bar div { height: 100%; background: linear-gradient(90deg, var(--brand), var(--brand-dark)); border-radius: 6px; }
+  .top-amt { text-align: right; flex-shrink: 0; }
+  .top-amt b { display: block; }
+  .top-amt small { color: var(--muted); font-size: 12px; }
+
+  /* ---------- Login / setup cards ---------- */
+  .hidden { display: none !important; }
+  .center { max-width: 420px; margin: 70px auto; border-top: 4px solid var(--brand); }
+  .center h2 { text-align: center; }
+  .error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 16px; }
+
+  /* ---------- Logo ---------- */
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .logo {
+    width: 40px; height: 40px; flex-shrink: 0;
+    filter: drop-shadow(0 3px 4px rgba(0,0,0,.28));
+    transition: transform .3s;
+  }
+  .brand:hover .logo { transform: perspective(200px) rotateY(25deg) scale(1.08); }
+  .logo-stage { perspective: 600px; text-align: center; margin-bottom: 6px; }
+  .logo-big {
+    width: 96px; height: 96px;
+    filter: drop-shadow(0 12px 10px rgba(6,95,70,.3));
+    animation: tilt3d 5s ease-in-out infinite;
+  }
+  @keyframes tilt3d {
+    0%, 100% { transform: rotateY(-24deg) rotateX(6deg) translateY(0); }
+    50% { transform: rotateY(24deg) rotateX(-4deg) translateY(-6px); }
+  }
+  @media (prefers-reduced-motion: reduce) { .logo-big { animation: none; } }
+
+  /* ---------- Home page with pictures ---------- */
+  .hero { position: relative; min-height: 100vh; overflow: hidden; }
+  .hero-slides {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #064e3b, #0f9d6b);
+  }
+  .slide {
+    position: absolute; inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    animation: heroFade 18s infinite;
+  }
+  /* Change the picture file names here if yours are different */
+  .s1 { background-image: url("images/hero1.jpg"); }
+  .s2 { background-image: url("images/hero2.jpg"); animation-delay: 6s; }
+  .s3 { background-image: url("images/hero3.jpg"); animation-delay: 12s; }
+  @keyframes heroFade {
+    0% { opacity: 0; }
+    6% { opacity: 1; }
+    33% { opacity: 1; }
+    39% { opacity: 0; }
+    100% { opacity: 0; }
+  }
+  .hero-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(4,60,45,.82), rgba(15,157,107,.45));
+  }
+  .hero-content {
+    position: relative; z-index: 2;
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+    gap: 48px;
+    padding: 32px 20px;
+  }
+  .lang-float {
+    position: absolute; top: 16px; right: 16px; z-index: 5;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.45);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+  }
+  .lang-float:hover { background: rgba(255,255,255,.28); }
+  .hero-text { color: #fff; max-width: 470px; }
+  .hero-text h1 {
+    font-size: 46px; font-weight: 800; line-height: 1.1;
+    letter-spacing: -0.03em; margin: 0 0 16px;
+    text-shadow: 0 2px 14px rgba(0,0,0,.3);
+  }
+  .hero-text p {
+    font-size: 18px; font-weight: 400; line-height: 1.6;
+    margin: 0 0 26px; color: rgba(255,255,255,.92);
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,.14);
+    border: 1px solid rgba(255,255,255,.35);
+    padding: 9px 16px 9px 12px;
+    border-radius: 999px;
+    font-size: 14px; font-weight: 600; letter-spacing: .01em;
+    backdrop-filter: blur(6px);
+    transition: background .2s, transform .2s;
+  }
+  .chip:hover { background: rgba(255,255,255,.24); transform: translateY(-1px); }
+  .ico {
+    width: 18px; height: 18px; flex-shrink: 0;
+    fill: none; stroke: currentColor; stroke-width: 2;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+  .login-card {
+    margin: 0;
+    width: 100%;
+    max-width: 400px;
+    background: rgba(255,255,255,.97);
+    box-shadow: 0 20px 50px rgba(0,0,0,.3);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .slide { animation: none; }
+    .s1 { opacity: 1; }
+  }
+
+  /* ---------- Notifications and dialogs ---------- */
+  #toasts {
+    position: fixed;
+    top: 76px; right: 20px;
+    z-index: 300;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+  .toast {
+    pointer-events: auto;
+    background: #fff;
+    border-left: 4px solid var(--brand);
+    box-shadow: 0 10px 30px rgba(15,23,42,.2);
+    border-radius: 12px;
+    padding: 13px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    min-width: 240px;
+    max-width: 380px;
+    animation: toastIn .25s ease;
+    transition: opacity .3s, transform .3s;
+  }
+  .toast.error { border-left-color: var(--danger); }
+  .toast.out { opacity: 0; transform: translateX(24px); }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .dialog-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(15,23,42,.5);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 20px;
+  }
+  .dialog {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 25px 60px rgba(0,0,0,.3);
+    animation: popIn .18s ease;
+  }
+  .dialog.wide { max-width: 560px; max-height: 90vh; overflow-y: auto; }
+  .dialog h3 { margin: 0 0 8px; font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+  .dialog p { margin: 0 0 14px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .dialog.wide h3 { margin-bottom: 16px; }
+  .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(.94); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* ---------- Receipt ---------- */
+  .receipt-dialog { max-width: 400px; max-height: 92vh; overflow-y: auto; }
+  .receipt-paper {
+    font-family: "Courier New", Courier, monospace;
+    background: #fff;
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    padding: 20px 18px;
+    font-size: 13px;
+    color: #111;
+  }
+  .r-shop { text-align: center; font-weight: 800; font-size: 17px; }
+  .r-sub { text-align: center; color: #555; margin-top: 2px; }
+  .r-line { border-top: 1px dashed #999; margin: 12px 0; }
+  .r-row { display: flex; justify-content: space-between; gap: 12px; margin: 5px 0; }
+  .r-item { font-weight: 700; margin-bottom: 2px; }
+  .r-total { font-weight: 800; font-size: 15px; }
+  .r-foot { text-align: center; margin-top: 14px; color: #555; }
+
+  @media print {
+    body * { visibility: hidden; }
+    #receiptPaper, #receiptPaper * { visibility: visible; }
+    #receiptPaper {
+      position: absolute; left: 0; top: 0;
+      width: 100%; max-width: 380px;
+      border: none; border-radius: 0; padding: 8px;
+    }
+    .dialog-backdrop { background: none; backdrop-filter: none; }
+  }
+
+  /* ---------- Tablets and phones ---------- */
+  @media (max-width: 800px) {
+    header { height: auto; min-height: 56px; padding: 8px 14px; flex-wrap: wrap; }
+    header h1 { font-size: 16px; }
+    #userEmail { display: none; }
+
+    .shell { display: block; }
+    nav {
+      position: fixed;
+      top: auto; bottom: 0; left: 0; right: 0;
+      width: 100%; height: auto;
+      flex-direction: row;
+      gap: 4px;
+      padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+      border-right: none;
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -4px 16px rgba(0,0,0,.06);
+      z-index: 30;
+      overflow: visible;
+    }
+    nav button {
+      flex: 1;
+      flex-direction: column;
+      justify-content: center;
+      gap: 3px;
+      padding: 8px 4px;
+      font-size: 11px;
+      text-align: center;
+    }
+    nav button.active::before { display: none; }
+
+    main { padding: 16px 12px 96px; }
+    .two-col { grid-template-columns: 1fr; gap: 0; }
+  }
+
+  @media (max-width: 600px) {
+    .card { padding: 16px; }
+    .center { margin: 30px 12px; }
+    .banner { padding: 20px; }
+    .banner-hi { font-size: 20px; }
+    .kpis { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .kpi { padding: 14px; flex-direction: column; align-items: flex-start; gap: 10px; }
+    .kpi-value { font-size: 18px; }
+
+    #toasts { left: 12px; right: 12px; top: 70px; }
+    .toast { max-width: none; }
+
+    .hero-content { gap: 24px; padding: 60px 14px 24px; }
+    .hero-text { text-align: center; }
+    .hero-text h1 { font-size: 32px; }
+    .hero-text p { font-size: 15px; }
+    .chips { justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGO (drawn once, reused below) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gBag" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#34d399"/>
+      <stop offset="1" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="gSide" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#047857"/>
+      <stop offset="1" stop-color="#064e3b"/>
+    </linearGradient>
+    <linearGradient id="gCoin" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fde68a"/>
+      <stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+    <symbol id="logoIcon" viewBox="0 0 64 64">
+      <ellipse cx="32" cy="60.5" rx="22" ry="3" fill="#000" opacity=".16"/>
+      <path d="M24 23V17a8 8 0 0 1 16 0v6" fill="none" stroke="#065f46" stroke-width="4.5" stroke-linecap="round"/>
+      <path d="M24 23V17a8 8 0 0 1 16 0v6" fill="none" stroke="#6ee7b7" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M44 24l8-4v30q0 2.5-2.2 3.6L44 56z" fill="url(#gSide)"/>
+      <path d="M10 24l8-4h34l-8 4z" fill="#a7f3d0"/>
+      <path d="M10 24h34v30q0 4-4 4H14q-4 0-4-4z" fill="url(#gBag)"/>
+      <path d="M10 24h34v6q-17 7-34 0z" fill="#fff" opacity=".18"/>
+      <rect x="16" y="45" width="5" height="8" rx="1.2" fill="#fff"/>
+      <rect x="24" y="39" width="5" height="14" rx="1.2" fill="#fff"/>
+      <rect x="32" y="33" width="5" height="20" rx="1.2" fill="#fff"/>
+      <circle cx="48" cy="47" r="11" fill="url(#gCoin)" stroke="#d97706" stroke-width="1.5"/>
+      <circle cx="48" cy="47" r="7.6" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1"/>
+      <text x="48" y="51.3" text-anchor="middle" font-size="12" font-weight="800" fill="#b45309" font-family="Arial, sans-serif">K</text>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- LOGIN SCREEN (home page with pictures) -->
+<div id="authScreen" class="hidden hero">
+  <div class="hero-slides">
+    <div class="slide s1"></div>
+    <div class="slide s2"></div>
+    <div class="slide s3"></div>
+  </div>
+  <div class="hero-overlay"></div>
+  <button class="lang-float" id="langBtnAuth">Kiswahili</button>
+
+  <div class="hero-content">
+    <div class="hero-text">
+      <h1 data-i18n="hero.title">Run your shop smarter</h1>
+      <p data-i18n="hero.sub">Track your stock, record sales and keep every customer's debt in one place.</p>
+      <div class="chips">
+        <span class="chip"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg><span data-i18n="nav.stock">Stock</span></span>
+        <span class="chip"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><span data-i18n="nav.sales">Sales</span></span>
+        <span class="chip"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7"/><path d="M9 11h5"/></svg><span data-i18n="nav.debts">Debts</span></span>
+        <span class="chip"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/><path d="M9 14l2.5 2.5L16 12"/></svg><span data-i18n="hero.saved">Saved online</span></span>
+      </div>
+    </div>
+
+    <div class="card center login-card">
+      <div class="logo-stage"><svg class="logo logo-big" viewBox="0 0 64 64" aria-hidden="true"><use href="#logoIcon"/></svg></div>
+      <h2 id="authTitle">Log in to your shop</h2>
+      <div style="margin-bottom:12px"><label data-i18n="f.email">Email</label><input id="authEmail" type="email" autocomplete="email"></div>
+      <div style="margin-bottom:12px"><label data-i18n="f.password">Password</label><input id="authPassword" type="password" autocomplete="current-password"></div>
+      <div class="actions"><button id="authBtn">Log in</button></div>
+      <p id="authError" class="error"></p>
+      <p style="font-size:13px"><span id="authSwitchText">No account yet?</span> <button class="link" id="authSwitchBtn">Create one</button></p>
+      <p style="font-size:13px"><button class="link" id="forgotBtn" data-i18n="auth.forgot">Forgot password?</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING SCREEN -->
+<div id="loadingScreen" class="hidden">
+  <div class="card center"><h2 data-i18n="loading">Loading your shop...</h2></div>
+</div>
+
+<!-- SETUP SCREEN -->
+<div id="setupScreen" class="hidden">
+  <div class="card center">
+    <div class="logo-stage"><svg class="logo logo-big" viewBox="0 0 64 64" aria-hidden="true"><use href="#logoIcon"/></svg></div>
+    <h2 data-i18n="setup.title">Welcome! What type of shop do you run?</h2>
+    <label for="shopTypeSelect" data-i18n="setup.type">Shop type</label>
+    <select id="shopTypeSelect"></select>
+    <div class="actions"><button id="continueBtn" data-i18n="btn.continue">Continue</button></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="appScreen" class="hidden">
+  <header>
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><use href="#logoIcon"/></svg>
+      <h1 id="appTitle">Shop Tracker</h1>
+    </div>
+    <div>
+      <span id="saveStatus" style="font-size:12px;margin-right:8px"></span>
+      <span id="userEmail" style="font-size:12px;margin-right:8px"></span>
+      <button class="light small" id="langBtn">Kiswahili</button>
+      <button class="light small" id="changeTypeBtn" data-i18n="btn.changeType">Change shop type</button>
+      <button class="light small" id="logoutBtn" data-i18n="btn.logout">Log out</button>
+    </div>
+  </header>
+
+  <div class="shell">
+    <nav>
+      <button id="tabStock" class="active">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+        <span data-i18n="nav.stock">Stock</span>
+      </button>
+      <button id="tabSales">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span data-i18n="nav.sales">Sales</span>
+      </button>
+      <button id="tabDebts">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7"/><path d="M9 11h5"/></svg>
+        <span data-i18n="nav.debts">Debts</span>
+      </button>
+      <button id="tabReports">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span data-i18n="nav.reports">Reports</span>
+      </button>
+    </nav>
+
+    <main>
+      <!-- WELCOME BANNER -->
+      <div class="banner">
+        <div>
+          <div class="banner-hi" id="bannerHi">Welcome!</div>
+          <div class="banner-sub" id="bannerSub"></div>
+        </div>
+        <div class="banner-actions">
+          <button class="light" id="editShopName" data-i18n="banner.shop">Shop name</button>
+          <button class="banner-btn" id="quickSale" data-i18n="banner.newSale">+ New sale</button>
+        </div>
+      </div>
+
+      <!-- STOCK PAGE -->
+      <div id="stockPage">
+        <div class="kpis">
+          <div class="kpi">
+            <div class="kpi-icon ic-blue"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>
+            <div><div class="kpi-label" data-i18n="kpi.items">Items</div><div class="kpi-value" id="kpiItems">0</div></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-icon ic-green"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+            <div><div class="kpi-label" data-i18n="kpi.value">Stock value</div><div class="kpi-value" id="kpiValue">KSh 0</div></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-icon ic-purple"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></div>
+            <div><div class="kpi-label" data-i18n="kpi.profitPot">Potential profit</div><div class="kpi-value" id="kpiProfit">KSh 0</div></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-icon ic-red"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+            <div><div class="kpi-label" data-i18n="kpi.low">Low stock</div><div class="kpi-value" id="kpiLow">0</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 data-i18n="stock.add">Add stock item</h2>
+          <div class="grid">
+            <div><label data-i18n="f.name">Item name</label><input id="itemName" data-i18n-ph="ph.itemName" placeholder="e.g. Sugar 1kg"></div>
+            <div><label data-i18n="f.category">Category</label><select id="itemCategory"></select></div>
+            <div><label data-i18n="f.unit">Unit</label><select id="itemUnit"></select></div>
+            <div><label data-i18n="f.qty">Quantity</label><input id="itemQty" type="number" min="0" value="0"></div>
+            <div><label data-i18n="f.buy">Buying price (KSh)</label><input id="itemBuy" type="number" min="0" value="0"></div>
+            <div><label data-i18n="f.sell">Selling price (KSh)</label><input id="itemSell" type="number" min="0" value="0"></div>
+            <div><label data-i18n="f.low">Low stock alert at</label><input id="itemLow" type="number" min="0" value="5"></div>
+            <div><label id="extraLabel">Extra</label><input id="itemExtra"></div>
+          </div>
+          <div class="actions"><button id="addBtn" data-i18n="btn.addItem">Add item</button></div>
+        </div>
+
+        <div class="card">
+          <h2 data-i18n="stock.current">Current stock</h2>
+          <div class="grid" style="margin-bottom:14px">
+            <div><label data-i18n="f.search">Search</label><input id="searchBox" data-i18n-ph="ph.searchName" placeholder="Search by name"></div>
+            <div><label data-i18n="f.category">Category</label><select id="stockCategory"></select></div>
+            <div><label data-i18n="f.status">Status</label><select id="stockStatus"></select></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th data-i18n="th.name">Name</th><th data-i18n="th.category">Category</th><th data-i18n="th.qty">Qty</th><th data-i18n="th.buy">Buy</th><th data-i18n="th.sell">Sell</th>
+                  <th id="extraHead">Extra</th><th data-i18n="th.actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="stockBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SALES PAGE -->
+      <div id="salesPage" class="hidden">
+        <div class="kpis">
+          <div class="kpi">
+            <div class="kpi-icon ic-green"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+            <div><div class="kpi-label" data-i18n="kpi.salesToday">Today's sales</div><div class="kpi-value" id="statToday">KSh 0</div></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-icon ic-purple"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></div>
+            <div><div class="kpi-label" data-i18n="kpi.profitToday">Today's profit</div><div class="kpi-value" id="statProfit">KSh 0</div></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-icon ic-amber"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            <div><div class="kpi-label" data-i18n="kpi.creditToday">Credit given today</div><div class="kpi-value" id="statCredit">KSh 0</div></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-icon ic-blue"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>
+            <div><div class="kpi-label" data-i18n="kpi.countToday">Sales today</div><div class="kpi-value" id="statCount">0</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 data-i18n="sale.record">Record a sale</h2>
+          <div class="grid">
+            <div><label data-i18n="f.item">Item</label><select id="saleItem"></select></div>
+            <div><label data-i18n="f.qty">Quantity</label><input id="saleQty" type="number" min="1" value="1"></div>
+            <div><label data-i18n="f.priceEach">Selling price each (KSh)</label><input id="salePrice" type="number" min="0" value="0"></div>
+            <div>
+              <label data-i18n="f.payment">Payment</label>
+              <select id="salePayment">
+                <option value="paid" data-i18n="pay.paid">Paid (cash / M-Pesa)</option>
+                <option value="credit" data-i18n="pay.credit">On credit (debt)</option>
+              </select>
+            </div>
+            <div id="customerBox" class="hidden">
+              <label data-i18n="f.customerName">Customer name</label>
+              <input id="saleCustomer" list="customerList" data-i18n-ph="ph.whoOwes" placeholder="Who owes you?">
+            </div>
+          </div>
+          <datalist id="customerList"></datalist>
+          <p id="saleTotal" class="total-line"></p>
+          <div class="actions"><button id="sellBtn" data-i18n="btn.recordSale">Record sale</button></div>
+        </div>
+
+        <div class="card">
+          <h2 data-i18n="sale.recent">Recent sales</h2>
+          <div class="grid" style="margin-bottom:14px">
+            <div><label data-i18n="f.search">Search</label><input id="salesSearch" data-i18n-ph="ph.searchSales" placeholder="Search item or customer"></div>
+            <div>
+              <label data-i18n="f.payment">Payment</label>
+              <select id="salesFilter">
+                <option value="all" data-i18n="filter.all">All</option>
+                <option value="paid" data-i18n="pay.paidShort">Paid</option>
+                <option value="credit" data-i18n="pay.creditShort">Credit</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th data-i18n="th.date">Date</th><th data-i18n="th.item">Item</th><th data-i18n="th.qty">Qty</th><th data-i18n="th.total">Total</th><th data-i18n="th.payment">Payment</th><th data-i18n="th.customer">Customer</th><th data-i18n="th.actions">Actions</th></tr>
+              </thead>
+              <tbody id="salesBody"></tbody>
+            </table>
+          </div>
+          <p class="report-note" id="salesNote"></p>
+        </div>
+      </div>
+
+      <!-- DEBTS PAGE -->
+      <div id="debtsPage" class="hidden">
+        <div class="kpis">
+          <div class="kpi">
+            <div class="kpi-icon ic-red"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+            <div><div class="kpi-label" data-i18n="kpi.owed">Total owed</div><div class="kpi-value" id="statOwed">KSh 0</div></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-icon ic-amber"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <div><div class="kpi-label" data-i18n="kpi.owing">Customers owing</div><div class="kpi-value" id="statDebtors">0</div></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-icon ic-green"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+            <div><div class="kpi-label" data-i18n="kpi.collected">Collected today</div><div class="kpi-value" id="statCollected">KSh 0</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 data-i18n="debt.who">Who owes you</h2>
+          <div class="grid" style="margin-bottom:14px">
+            <div><label data-i18n="f.search">Search</label><input id="debtSearch" data-i18n-ph="ph.searchCustomer" placeholder="Search customer"></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th data-i18n="th.customer">Customer</th><th data-i18n="th.credit">Total credit</th><th data-i18n="th.paid">Paid</th><th data-i18n="th.balance">Balance</th><th data-i18n="th.action">Action</th></tr>
+              </thead>
+              <tbody id="debtsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 data-i18n="debt.addOld">Add an old debt</h2>
+          <p style="font-size:13px;color:#64748b;margin-top:-8px" data-i18n="debt.oldHint">For debts from before you started using this app.</p>
+          <div class="grid">
+            <div><label data-i18n="f.customerName">Customer name</label><input id="oldCustomer" list="customerList"></div>
+            <div><label data-i18n="f.amount">Amount (KSh)</label><input id="oldAmount" type="number" min="0"></div>
+            <div><label data-i18n="f.noteOpt">Note (optional)</label><input id="oldNote"></div>
+          </div>
+          <div class="actions"><button id="addOldBtn" data-i18n="btn.addDebt">Add debt</button></div>
+        </div>
+
+        <div class="card">
+          <h2 data-i18n="debt.recent">Recent payments and added debts</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th data-i18n="th.date">Date</th><th data-i18n="th.type">Type</th><th data-i18n="th.customer">Customer</th><th data-i18n="th.amount">Amount</th><th data-i18n="th.note">Note</th><th data-i18n="th.action">Action</th></tr>
+              </thead>
+              <tbody id="activityBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPORTS PAGE -->
+      <div id="reportsPage" class="hidden">
+        <div class="card">
+          <div class="report-head">
+            <div>
+              <h2 style="margin:0" data-i18n="rep.title">Sales report</h2>
+              <div class="muted-sm" id="repTitle">Last 7 days</div>
+            </div>
+            <div class="seg" id="rangeSeg">
+              <button data-range="7" class="active" data-i18n="rep.7">Last 7 days</button>
+              <button data-range="30" data-i18n="rep.30">Last 30 days</button>
+              <button data-range="month" data-i18n="rep.month">This month</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi">
+            <div class="kpi-icon ic-green"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+            <div><div class="kpi-label" data-i18n="rep.totalSales">Total sales</div><div class="kpi-value" id="repSales">KSh 0</div></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-icon ic-purple"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></div>
+            <div><div class="kpi-label" data-i18n="rep.profit">Profit</div><div class="kpi-value" id="repProfit">KSh 0</div></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-icon ic-amber"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            <div><div class="kpi-label" data-i18n="rep.credit">Credit given</div><div class="kpi-value" id="repCredit">KSh 0</div></div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-icon ic-blue"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>
+            <div><div class="kpi-label" data-i18n="rep.count">Number of sales</div><div class="kpi-value" id="repCount">0</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 data-i18n="rep.perDay">Sales per day</h2>
+          <div class="chart" id="reportChart"></div>
+          <p class="report-note" id="reportNote"></p>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <h2 data-i18n="rep.top">Best sellers</h2>
+            <div id="topList"></div>
+          </div>
+          <div class="card">
+            <h2 data-i18n="rep.slow">Not selling in this period</h2>
+            <div id="slowList"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 data-i18n="rep.dayByDay">Day by day</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th data-i18n="th.date">Date</th><th data-i18n="th.salesCount">Sales</th><th data-i18n="th.total">Total</th><th data-i18n="th.profit">Profit</th><th data-i18n="th.creditGiven">Credit given</th></tr>
+              </thead>
+              <tbody id="reportBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 data-i18n="dl.title">Download your data</h2>
+          <p style="font-size:14px;color:#64748b;margin-top:-6px" data-i18n="dl.hint">These files open in Excel or Google Sheets. Use them as a backup or share them with your accountant.</p>
+          <div class="dl-row">
+            <button class="secondary" id="dlStock" data-i18n="dl.stock">Stock list</button>
+            <button class="secondary" id="dlSales" data-i18n="dl.sales">Sales history</button>
+            <button class="secondary" id="dlDebts" data-i18n="dl.debts">Debts</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- NOTIFICATIONS -->
+<div id="toasts"></div>
+
+<!-- DIALOG (replaces the browser's confirm and prompt boxes) -->
+<div id="dialog" class="dialog-backdrop hidden">
+  <div class="dialog" role="dialog" aria-modal="true">
+    <h3 id="dialogTitle"></h3>
+    <p id="dialogText"></p>
+    <input id="dialogInput" class="hidden" type="number" min="0" placeholder="0">
+    <div class="dialog-actions">
+      <button class="secondary" id="dialogCancel" data-i18n="btn.cancel">Cancel</button>
+      <button id="dialogOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT ITEM -->
+<div id="editModal" class="dialog-backdrop hidden">
+  <div class="dialog wide" role="dialog" aria-modal="true">
+    <h3 data-i18n="edit.title">Edit item</h3>
+    <div class="grid">
+      <div><label data-i18n="f.name">Item name</label><input id="editName"></div>
+      <div><label data-i18n="f.category">Category</label><select id="editCategory"></select></div>
+      <div><label data-i18n="f.unit">Unit</label><select id="editUnit"></select></div>
+      <div><label data-i18n="f.qty">Quantity</label><input id="editQty" type="number" min="0"></div>
+      <div><label data-i18n="f.buy">Buying price (KSh)</label><input id="editBuy" type="number" min="0"></div>
+      <div><label data-i18n="f.sell">Selling price (KSh)</label><input id="editSell" type="number" min="0"></div>
+      <div><label data-i18n="f.low">Low stock alert at</label><input id="editLow" type="number" min="0"></div>
+      <div><label id="editExtraLabel">Extra</label><input id="editExtra"></div>
+    </div>
+    <div class="dialog-actions">
+      <button class="secondary" id="editCancel" data-i18n="btn.cancel">Cancel</button>
+      <button id="editSave" data-i18n="btn.saveChanges">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECEIPT -->
+<div id="receiptModal" class="dialog-backdrop hidden">
+  <div class="dialog receipt-dialog" role="dialog" aria-modal="true">
+    <div id="receiptPaper" class="receipt-paper"></div>
+    <div class="dialog-actions">
+      <button class="secondary" id="receiptClose" data-i18n="btn.close">Close</button>
+      <button id="receiptPrint" data-i18n="btn.print">Print</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+  import {
+    getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
+    signInWithEmailAndPassword, signOut, sendPasswordResetEmail
+  } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+  import {
+    getFirestore, doc, getDoc, setDoc
+  } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCR6gQeJ1HIRJbbAD966TShKYyoFcnrqRM",
+    authDomain: "shop-tracker-770b6.firebaseapp.com",
+    projectId: "shop-tracker-770b6",
+    storageBucket: "shop-tracker-770b6.firebasestorage.app",
+    messagingSenderId: "364537246911",
+    appId: "1:364537246911:web:af52c921f34aa300fdc20a"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // ---------- LANGUAGE (English and Kiswahili) ----------
+  const T = {
+    en: {
+      "nav.stock": "Stock", "nav.sales": "Sales", "nav.debts": "Debts", "nav.reports": "Reports",
+      "hero.title": "Run your shop smarter",
+      "hero.sub": "Track your stock, record sales and keep every customer's debt in one place.",
+      "hero.saved": "Saved online",
+      "f.email": "Email", "f.password": "Password",
+      "auth.login": "Log in", "auth.loginTitle": "Log in to your shop",
+      "auth.create": "Create account", "auth.createTitle": "Create your account",
+      "auth.noAccount": "No account yet?", "auth.haveAccount": "Already have an account?",
+      "auth.createOne": "Create one", "auth.forgot": "Forgot password?",
+      "auth.enterBoth": "Enter your email and password.",
+      "auth.typeEmail": "Type your email above first, then click Forgot password.",
+      "auth.resetSent": "Password reset email sent. Check your inbox and spam folder.",
+      "err.cred": "Wrong email or password.",
+      "err.email": "That email address doesn't look right.",
+      "err.exists": "An account with this email already exists. Try logging in.",
+      "err.weak": "Password is too short. Use at least 6 characters.",
+      "err.many": "Too many attempts. Wait a few minutes and try again.",
+      "err.network": "No internet connection. Check your network.",
+      "err.domain": "This web address isn't allowed yet in Firebase.",
+      "err.generic": "Something went wrong. Please try again.",
+      "err.rules": "Your database rules are not set up yet. Check the Rules tab in Firestore.",
+      "err.load": "Could not load your shop data. Check your internet connection and that the Firestore database is created, then log in again.",
+      "loading": "Loading your shop...",
+      "setup.title": "Welcome! What type of shop do you run?", "setup.type": "Shop type",
+      "btn.continue": "Continue", "btn.changeType": "Change shop type", "btn.logout": "Log out",
+      "save.saving": "Saving...", "save.saved": "Saved", "save.fail": "NOT SAVED - check internet",
+      "greet.morning": "Good morning", "greet.afternoon": "Good afternoon", "greet.evening": "Good evening",
+      "banner.shop": "Shop name", "banner.newSale": "+ New sale",
+      "shop.title": "Shop name", "shop.text": "This name appears on your welcome banner and on receipts.",
+      "shop.ph": "e.g. Mary's General Shop", "shop.saved": "Shop name saved.", "shop.cleared": "Shop name cleared.",
+      "kpi.items": "Items", "kpi.value": "Stock value", "kpi.profitPot": "Potential profit", "kpi.low": "Low stock",
+      "stock.add": "Add stock item", "stock.current": "Current stock",
+      "f.name": "Item name", "f.category": "Category", "f.unit": "Unit", "f.qty": "Quantity",
+      "f.buy": "Buying price (KSh)", "f.sell": "Selling price (KSh)", "f.low": "Low stock alert at",
+      "f.search": "Search", "f.status": "Status",
+      "ph.itemName": "e.g. Sugar 1kg", "ph.searchName": "Search by name",
+      "ph.searchSales": "Search item or customer", "ph.searchCustomer": "Search customer",
+      "ph.whoOwes": "Who owes you?",
+      "btn.addItem": "Add item",
+      "filter.allCats": "All categories", "filter.allItems": "All items",
+      "filter.lowOnly": "Low stock only", "filter.outOnly": "Out of stock", "filter.all": "All",
+      "th.name": "Name", "th.category": "Category", "th.qty": "Qty", "th.buy": "Buy", "th.sell": "Sell",
+      "th.actions": "Actions", "th.action": "Action", "th.date": "Date", "th.item": "Item",
+      "th.total": "Total", "th.payment": "Payment", "th.customer": "Customer",
+      "th.credit": "Total credit", "th.paid": "Paid", "th.balance": "Balance",
+      "th.type": "Type", "th.amount": "Amount", "th.note": "Note",
+      "th.salesCount": "Sales", "th.profit": "Profit", "th.creditGiven": "Credit given",
+      "btn.edit": "Edit", "btn.restock": "+ Restock", "btn.delete": "Delete", "badge.low": "LOW",
+      "stock.empty": "No items yet. Add your first item above.",
+      "stock.noMatch": "No items match your search.",
+      "toast.needName": "Please enter the item name.", "toast.added": "Item added.",
+      "toast.itemUpdated": "Item updated.", "toast.itemDeleted": "Item deleted.",
+      "edit.title": "Edit item", "btn.saveChanges": "Save changes", "btn.cancel": "Cancel",
+      "btn.save": "Save", "btn.close": "Close", "btn.print": "Print",
+      "restock.title": "Restock {name}", "restock.text": "How many {unit} do you want to add?",
+      "restock.ok": "Add stock", "restock.bad": "Enter a valid number.",
+      "restock.done": "Added {n} {unit} to {name}.",
+      "del.title": "Delete {name}?", "del.text": "This removes it from your stock list.",
+      "kpi.salesToday": "Today's sales", "kpi.profitToday": "Today's profit",
+      "kpi.creditToday": "Credit given today", "kpi.countToday": "Sales today",
+      "sale.record": "Record a sale", "f.item": "Item", "f.priceEach": "Selling price each (KSh)",
+      "f.payment": "Payment", "f.customerName": "Customer name",
+      "pay.paid": "Paid (cash / M-Pesa)", "pay.credit": "On credit (debt)",
+      "pay.paidShort": "Paid", "pay.creditShort": "Credit",
+      "btn.recordSale": "Record sale", "sale.total": "Total: {amount}",
+      "sale.noStock": "No items in stock", "sale.left": "{n} {unit} left",
+      "sale.recent": "Recent sales",
+      "sale.empty": "No sales yet. Record your first sale above.",
+      "sale.noMatch": "No sales match your search.",
+      "sale.showing": "Showing {shown} of {total} sales.",
+      "sale.pickItem": "Please choose an item to sell.", "sale.badQty": "Enter a valid quantity.",
+      "sale.notEnough": "Not enough stock. You only have {n} {unit}.",
+      "sale.needCustomer": "Enter the customer's name for a credit sale.",
+      "sale.recorded": "Sale recorded: {amount}",
+      "btn.receipt": "Receipt", "btn.undo": "Undo",
+      "undo.title": "Undo this sale?", "undo.text": "The stock will be returned.",
+      "undo.ok": "Undo sale", "undo.done": "Sale undone. Stock returned.",
+      "kpi.owed": "Total owed", "kpi.owing": "Customers owing", "kpi.collected": "Collected today",
+      "debt.who": "Who owes you", "debt.empty": "No one owes you right now.",
+      "debt.noMatch": "No customer matches your search.",
+      "btn.recordPayment": "Record payment",
+      "debt.addOld": "Add an old debt",
+      "debt.oldHint": "For debts from before you started using this app.",
+      "f.amount": "Amount (KSh)", "f.noteOpt": "Note (optional)", "btn.addDebt": "Add debt",
+      "debt.recent": "Recent payments and added debts", "debt.nothing": "Nothing yet.",
+      "type.payment": "Payment", "type.oldDebt": "Old debt",
+      "pay.title": "Record payment", "pay.text": "{name} owes {amount}. How much did they pay (KSh)?",
+      "pay.ok": "Save payment", "pay.bad": "Enter a valid amount.",
+      "pay.tooMuch": "That is more than they owe ({amount}).", "pay.done": "Payment recorded: {amount}",
+      "debt.needName": "Enter the customer's name.", "debt.added": "Debt added.",
+      "delAct.title": "Delete this entry?", "delAct.text": "This cannot be undone.", "delAct.done": "Deleted.",
+      "rep.title": "Sales report", "rep.7": "Last 7 days", "rep.30": "Last 30 days", "rep.month": "This month",
+      "rep.totalSales": "Total sales", "rep.profit": "Profit", "rep.credit": "Credit given", "rep.count": "Number of sales",
+      "rep.perDay": "Sales per day", "rep.none": "No sales in this period yet.",
+      "rep.best": "Best day: {date} with {amount} in sales.",
+      "rep.tip": "{date}: {amount} (profit {profit})",
+      "rep.top": "Best sellers", "rep.slow": "Not selling in this period", "rep.dayByDay": "Day by day",
+      "rep.noneShort": "No sales in this period.",
+      "top.sold": "{n} {unit} sold", "top.profit": "profit {amount}",
+      "slow.line": "{n} {unit} · {amount} tied up in stock",
+      "slow.none": "Every item in stock has sold in this period. Nice!",
+      "slow.noItems": "Add items to your stock to see this.",
+      "dl.title": "Download your data",
+      "dl.hint": "These files open in Excel or Google Sheets. Use them as a backup or share them with your accountant.",
+      "dl.stock": "Stock list", "dl.sales": "Sales history", "dl.debts": "Debts",
+      "dl.done": "Download started.", "dl.nothing": "There is nothing to download yet.",
+      "receipt.title": "Receipt", "receipt.no": "No.", "receipt.date": "Date", "receipt.customer": "Customer",
+      "receipt.total": "TOTAL", "receipt.payment": "Payment", "receipt.paid": "PAID", "receipt.credit": "ON CREDIT",
+      "receipt.thanks": "Thank you for shopping with us!"
+    },
+    sw: {
+      "nav.stock": "Bidhaa", "nav.sales": "Mauzo", "nav.debts": "Madeni", "nav.reports": "Ripoti",
+      "hero.title": "Simamia duka lako kwa ustadi zaidi",
+      "hero.sub": "Fuatilia bidhaa zako, rekodi mauzo na uweke madeni ya kila mteja mahali pamoja.",
+      "hero.saved": "Imehifadhiwa mtandaoni",
+      "f.email": "Barua pepe", "f.password": "Nenosiri",
+      "auth.login": "Ingia", "auth.loginTitle": "Ingia kwenye duka lako",
+      "auth.create": "Fungua akaunti", "auth.createTitle": "Fungua akaunti yako",
+      "auth.noAccount": "Huna akaunti bado?", "auth.haveAccount": "Tayari una akaunti?",
+      "auth.createOne": "Fungua moja", "auth.forgot": "Umesahau nenosiri?",
+      "auth.enterBoth": "Weka barua pepe na nenosiri lako.",
+      "auth.typeEmail": "Andika barua pepe yako hapo juu kwanza, kisha bofya Umesahau nenosiri.",
+      "auth.resetSent": "Barua pepe ya kubadilisha nenosiri imetumwa. Angalia kikasha chako na folda ya spam.",
+      "err.cred": "Barua pepe au nenosiri si sahihi.",
+      "err.email": "Barua pepe hiyo haionekani sahihi.",
+      "err.exists": "Akaunti yenye barua pepe hii tayari ipo. Jaribu kuingia.",
+      "err.weak": "Nenosiri ni fupi mno. Tumia angalau herufi 6.",
+      "err.many": "Majaribio ni mengi mno. Subiri dakika chache kisha ujaribu tena.",
+      "err.network": "Hakuna mtandao. Angalia muunganisho wako.",
+      "err.domain": "Anwani hii ya tovuti bado haijaruhusiwa kwenye Firebase.",
+      "err.generic": "Hitilafu imetokea. Tafadhali jaribu tena.",
+      "err.rules": "Kanuni za hifadhidata bado hazijawekwa. Angalia kichupo cha Rules kwenye Firestore.",
+      "err.load": "Imeshindwa kupakia data ya duka lako. Angalia mtandao wako na uhakikishe hifadhidata ya Firestore imeundwa, kisha uingie tena.",
+      "loading": "Inapakia duka lako...",
+      "setup.title": "Karibu! Unaendesha duka la aina gani?", "setup.type": "Aina ya duka",
+      "btn.continue": "Endelea", "btn.changeType": "Badilisha aina ya duka", "btn.logout": "Toka",
+      "save.saving": "Inahifadhi...", "save.saved": "Imehifadhiwa", "save.fail": "HAIJAHIFADHIWA - angalia mtandao",
+      "greet.morning": "Habari za asubuhi", "greet.afternoon": "Habari za mchana", "greet.evening": "Habari za jioni",
+      "banner.shop": "Jina la duka", "banner.newSale": "+ Mauzo mapya",
+      "shop.title": "Jina la duka", "shop.text": "Jina hili linaonekana kwenye bango la kukaribisha na kwenye risiti.",
+      "shop.ph": "mf. Duka la Mary", "shop.saved": "Jina la duka limehifadhiwa.", "shop.cleared": "Jina la duka limeondolewa.",
+      "kpi.items": "Bidhaa", "kpi.value": "Thamani ya bidhaa", "kpi.profitPot": "Faida inayotarajiwa", "kpi.low": "Bidhaa zinazoisha",
+      "stock.add": "Ongeza bidhaa", "stock.current": "Bidhaa zilizopo",
+      "f.name": "Jina la bidhaa", "f.category": "Aina", "f.unit": "Kipimo", "f.qty": "Idadi",
+      "f.buy": "Bei ya kununua (KSh)", "f.sell": "Bei ya kuuza (KSh)", "f.low": "Tahadhari ikibaki",
+      "f.search": "Tafuta", "f.status": "Hali",
+      "ph.itemName": "mf. Sukari kilo 1", "ph.searchName": "Tafuta kwa jina",
+      "ph.searchSales": "Tafuta bidhaa au mteja", "ph.searchCustomer": "Tafuta mteja",
+      "ph.whoOwes": "Jina la mwenye deni",
+      "btn.addItem": "Ongeza bidhaa",
+      "filter.allCats": "Aina zote", "filter.allItems": "Bidhaa zote",
+      "filter.lowOnly": "Zinazoisha tu", "filter.outOnly": "Zilizoisha", "filter.all": "Zote",
+      "th.name": "Jina", "th.category": "Aina", "th.qty": "Idadi", "th.buy": "Kununua", "th.sell": "Kuuza",
+      "th.actions": "Vitendo", "th.action": "Kitendo", "th.date": "Tarehe", "th.item": "Bidhaa",
+      "th.total": "Jumla", "th.payment": "Malipo", "th.customer": "Mteja",
+      "th.credit": "Jumla ya mkopo", "th.paid": "Zilizolipwa", "th.balance": "Salio",
+      "th.type": "Aina", "th.amount": "Kiasi", "th.note": "Maelezo",
+      "th.salesCount": "Mauzo", "th.profit": "Faida", "th.creditGiven": "Mkopo uliotolewa",
+      "btn.edit": "Hariri", "btn.restock": "+ Ongeza", "btn.delete": "Futa", "badge.low": "INAISHA",
+      "stock.empty": "Hakuna bidhaa bado. Ongeza bidhaa yako ya kwanza hapo juu.",
+      "stock.noMatch": "Hakuna bidhaa inayolingana na utafutaji wako.",
+      "toast.needName": "Tafadhali weka jina la bidhaa.", "toast.added": "Bidhaa imeongezwa.",
+      "toast.itemUpdated": "Bidhaa imesasishwa.", "toast.itemDeleted": "Bidhaa imefutwa.",
+      "edit.title": "Hariri bidhaa", "btn.saveChanges": "Hifadhi mabadiliko", "btn.cancel": "Ghairi",
+      "btn.save": "Hifadhi", "btn.close": "Funga", "btn.print": "Chapisha",
+      "restock.title": "Ongeza stoo: {name}", "restock.text": "Unataka kuongeza {unit} ngapi?",
+      "restock.ok": "Ongeza", "restock.bad": "Weka nambari sahihi.",
+      "restock.done": "Umeongeza {n} {unit} kwa {name}.",
+      "del.title": "Futa {name}?", "del.text": "Hii itaiondoa kwenye orodha ya bidhaa zako.",
+      "kpi.salesToday": "Mauzo ya leo", "kpi.profitToday": "Faida ya leo",
+      "kpi.creditToday": "Mkopo uliotolewa leo", "kpi.countToday": "Idadi ya mauzo leo",
+      "sale.record": "Rekodi mauzo", "f.item": "Bidhaa", "f.priceEach": "Bei ya kuuza kila moja (KSh)",
+      "f.payment": "Malipo", "f.customerName": "Jina la mteja",
+      "pay.paid": "Imelipwa (pesa taslimu / M-Pesa)", "pay.credit": "Kwa mkopo (deni)",
+      "pay.paidShort": "Imelipwa", "pay.creditShort": "Mkopo",
+      "btn.recordSale": "Rekodi mauzo", "sale.total": "Jumla: {amount}",
+      "sale.noStock": "Hakuna bidhaa dukani", "sale.left": "{n} {unit} zimebaki",
+      "sale.recent": "Mauzo ya hivi karibuni",
+      "sale.empty": "Hakuna mauzo bado. Rekodi mauzo yako ya kwanza hapo juu.",
+      "sale.noMatch": "Hakuna mauzo yanayolingana na utafutaji wako.",
+      "sale.showing": "Inaonyesha {shown} kati ya mauzo {total}.",
+      "sale.pickItem": "Tafadhali chagua bidhaa ya kuuza.", "sale.badQty": "Weka idadi sahihi.",
+      "sale.notEnough": "Bidhaa hazitoshi. Una {n} {unit} tu.",
+      "sale.needCustomer": "Weka jina la mteja kwa mauzo ya mkopo.",
+      "sale.recorded": "Mauzo yamerekodiwa: {amount}",
+      "btn.receipt": "Risiti", "btn.undo": "Tengua",
+      "undo.title": "Tengua mauzo haya?", "undo.text": "Bidhaa zitarudishwa.",
+      "undo.ok": "Tengua mauzo", "undo.done": "Mauzo yametenguliwa. Bidhaa zimerudishwa.",
+      "kpi.owed": "Jumla ya madeni", "kpi.owing": "Wateja wenye madeni", "kpi.collected": "Zilizokusanywa leo",
+      "debt.who": "Wenye madeni", "debt.empty": "Hakuna mwenye deni kwa sasa.",
+      "debt.noMatch": "Hakuna mteja anayelingana na utafutaji wako.",
+      "btn.recordPayment": "Rekodi malipo",
+      "debt.addOld": "Ongeza deni la zamani",
+      "debt.oldHint": "Kwa madeni ya kabla hujaanza kutumia programu hii.",
+      "f.amount": "Kiasi (KSh)", "f.noteOpt": "Maelezo (si lazima)", "btn.addDebt": "Ongeza deni",
+      "debt.recent": "Malipo na madeni yaliyoongezwa hivi karibuni", "debt.nothing": "Bado hakuna kitu.",
+      "type.payment": "Malipo", "type.oldDebt": "Deni la zamani",
+      "pay.title": "Rekodi malipo", "pay.text": "{name} ana deni la {amount}. Amelipa kiasi gani (KSh)?",
+      "pay.ok": "Hifadhi malipo", "pay.bad": "Weka kiasi sahihi.",
+      "pay.tooMuch": "Hicho ni zaidi ya deni lake ({amount}).", "pay.done": "Malipo yamerekodiwa: {amount}",
+      "debt.needName": "Weka jina la mteja.", "debt.added": "Deni limeongezwa.",
+      "delAct.title": "Futa kipengele hiki?", "delAct.text": "Hili haliwezi kutenguliwa.", "delAct.done": "Imefutwa.",
+      "rep.title": "Ripoti ya mauzo", "rep.7": "Siku 7 zilizopita", "rep.30": "Siku 30 zilizopita", "rep.month": "Mwezi huu",
+      "rep.totalSales": "Jumla ya mauzo", "rep.profit": "Faida", "rep.credit": "Mkopo uliotolewa", "rep.count": "Idadi ya mauzo",
+      "rep.perDay": "Mauzo kwa siku", "rep.none": "Hakuna mauzo katika kipindi hiki bado.",
+      "rep.best": "Siku bora: {date}, mauzo ya {amount}.",
+      "rep.tip": "{date}: {amount} (faida {profit})",
+      "rep.top": "Bidhaa zinazouzwa zaidi", "rep.slow": "Hazijauzwa katika kipindi hiki", "rep.dayByDay": "Siku kwa siku",
+      "rep.noneShort": "Hakuna mauzo katika kipindi hiki.",
+      "top.sold": "{n} {unit} zimeuzwa", "top.profit": "faida {amount}",
+      "slow.line": "{n} {unit} · {amount} zimefungwa kwenye bidhaa",
+      "slow.none": "Kila bidhaa iliyopo imeuzwa katika kipindi hiki. Vizuri!",
+      "slow.noItems": "Ongeza bidhaa ili kuona hili.",
+      "dl.title": "Pakua data yako",
+      "dl.hint": "Faili hizi zinafunguka kwenye Excel au Google Sheets. Zitumie kama nakala rudufu au umpe mhasibu wako.",
+      "dl.stock": "Orodha ya bidhaa", "dl.sales": "Historia ya mauzo", "dl.debts": "Madeni",
+      "dl.done": "Upakuaji umeanza.", "dl.nothing": "Hakuna cha kupakua bado.",
+      "receipt.title": "Risiti", "receipt.no": "Na.", "receipt.date": "Tarehe", "receipt.customer": "Mteja",
+      "receipt.total": "JUMLA", "receipt.payment": "Malipo", "receipt.paid": "IMELIPWA", "receipt.credit": "KWA MKOPO",
+      "receipt.thanks": "Asante kwa kununua kwetu!"
+    }
+  };
+
+  let lang = localStorage.getItem("lang") === "sw" ? "sw" : "en";
+
+  function t(k, vars) {
+    let s = (T[lang] && T[lang][k]) || T.en[k] || k;
+    if (vars) {
+      Object.keys(vars).forEach(name => { s = s.split("{" + name + "}").join(vars[name]); });
+    }
+    return s;
+  }
+
+  function locale() {
+    return lang === "sw" ? "sw-KE" : "en-GB";
+  }
+
+  // ---------- SHOP TYPES (add more here anytime) ----------
+  const SHOP_TYPES = {
+    grocery: {
+      label: "Grocery store", labelSw: "Duka la vyakula",
+      categories: ["Drinks", "Flour & grains", "Cooking oil", "Dairy", "Vegetables", "Household", "Other"],
+      units: ["pieces", "kg", "litres", "packets", "bottles"],
+      extra: { label: "Expiry date", labelSw: "Tarehe ya kuisha muda", type: "date" }
+    },
+    hardware: {
+      label: "Hardware", labelSw: "Duka la vifaa vya ujenzi",
+      categories: ["Nails & screws", "Paint", "Pipes & fittings", "Electrical", "Tools", "Cement & building", "Other"],
+      units: ["pieces", "metres", "bags", "rolls", "litres", "boxes"],
+      extra: { label: "Size / brand", labelSw: "Ukubwa / chapa", type: "text" }
+    },
+    general: {
+      label: "General shop", labelSw: "Duka la jumla",
+      categories: ["Food", "Drinks", "Toiletries", "Stationery", "Airtime & accessories", "Other"],
+      units: ["pieces", "packets", "kg", "litres"],
+      extra: { label: "Notes", labelSw: "Maelezo", type: "text" }
+    },
+    pharmacy: {
+      label: "Pharmacy / chemist", labelSw: "Duka la dawa",
+      categories: ["Painkillers", "Antibiotics", "Vitamins", "First aid", "Personal care", "Other"],
+      units: ["tablets", "bottles", "boxes", "packs"],
+      extra: { label: "Expiry date", labelSw: "Tarehe ya kuisha muda", type: "date" }
+    },
+    other: {
+      label: "Other", labelSw: "Nyingine",
+      categories: ["General"],
+      units: ["pieces", "kg", "litres", "packets"],
+      extra: { label: "Notes", labelSw: "Maelezo", type: "text" }
+    }
+  };
+
+  function typeLabel(k) {
+    const ty = SHOP_TYPES[k];
+    return lang === "sw" ? ty.labelSw : ty.label;
+  }
+
+  function extraLabel(ty) {
+    return lang === "sw" ? ty.extra.labelSw : ty.extra.label;
+  }
+
+  // ---------- STORAGE (saved online in Firestore) ----------
+  let currentUser = null;
+  let shopType = null;
+  let shopName = "";
+  let items = [];
+  let sales = [];
+  let payments = [];
+  let oldDebts = [];
+  let lastDebtors = [];
+  let reportRange = "7";
+  let currentTab = "stock";
+  let editingId = null;
+
+  function key(name) {
+    return currentUser.uid + ":" + name;
+  }
+
+  function shopRef() {
+    return doc(db, "shops", currentUser.uid);
+  }
+
+  async function loadUserData() {
+    const snap = await getDoc(shopRef());
+
+    if (snap.exists()) {
+      const d = snap.data();
+      shopType = d.shopType || null;
+      shopName = d.shopName || "";
+      items = d.items || [];
+      sales = d.sales || [];
+      payments = d.payments || [];
+      oldDebts = d.oldDebts || [];
+    } else {
+      // First time online: bring over anything saved earlier in this browser
+      shopType = localStorage.getItem(key("shopType"));
+      shopName = "";
+      items = JSON.parse(localStorage.getItem(key("stockItems")) || "[]");
+      sales = JSON.parse(localStorage.getItem(key("sales")) || "[]");
+      payments = JSON.parse(localStorage.getItem(key("payments")) || "[]");
+      oldDebts = JSON.parse(localStorage.getItem(key("oldDebts")) || "[]");
+      if (shopType || items.length > 0) await save();
+    }
+  }
+
+  async function save() {
+    if (!currentUser) return;
+    $("saveStatus").textContent = t("save.saving");
+    try {
+      await setDoc(shopRef(), { shopType, shopName, items, sales, payments, oldDebts });
+      $("saveStatus").textContent = t("save.saved");
+    } catch (err) {
+      console.error(err);
+      $("saveStatus").textContent = t("save.fail");
+    }
+  }
+
+  // ---------- HELPERS ----------
+  const $ = (id) => document.getElementById(id);
+
+  const EMPTY_ICON = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>';
+
+  function emptyRow(cols, text) {
+    return `<tr><td colspan="${cols}" class="empty">${EMPTY_ICON}<div>${esc(text)}</div></td></tr>`;
+  }
+
+  function esc(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function initials(name) {
+    return name.trim().split(/\s+/).map(w => w.charAt(0)).slice(0, 2).join("").toUpperCase();
+  }
+
+  function fillSelect(selectEl, options) {
+    selectEl.innerHTML = options.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join("");
+  }
+
+  // Uses your local date (Kenya time), not UTC
+  function dateKey(d) {
+    return d.getFullYear() + "-" +
+      String(d.getMonth() + 1).padStart(2, "0") + "-" +
+      String(d.getDate()).padStart(2, "0");
+  }
+
+  function todayStr() {
+    return dateKey(new Date());
+  }
+
+  function money(n) {
+    return "KSh " + Number(n).toLocaleString();
+  }
+
+  function shortMoney(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+    return String(Math.round(n));
+  }
+
+  // ---------- POPUPS (replace the browser's alert, confirm and prompt) ----------
+  function toast(message, type) {
+    const box = document.createElement("div");
+    box.className = "toast " + (type || "info");
+    box.textContent = message;
+    $("toasts").appendChild(box);
+    setTimeout(() => {
+      box.classList.add("out");
+      setTimeout(() => box.remove(), 300);
+    }, type === "error" ? 5000 : 3000);
+  }
+
+  function openDialog(options) {
+    return new Promise((resolve) => {
+      const kind = options.input || "";   // "", "number" or "text"
+      const inp = $("dialogInput");
+
+      $("dialogTitle").textContent = options.title || "";
+      $("dialogText").textContent = options.text || "";
+      inp.classList.toggle("hidden", !kind);
+      if (kind) {
+        inp.type = kind;
+        inp.value = options.value || "";
+        inp.placeholder = options.placeholder || "";
+      }
+      $("dialogOk").textContent = options.okText || "OK";
+      $("dialogOk").classList.toggle("danger", !!options.danger);
+      $("dialog").classList.remove("hidden");
+      setTimeout(() => (kind ? inp : $("dialogOk")).focus(), 50);
+
+      function close(result) {
+        $("dialog").classList.add("hidden");
+        $("dialogOk").removeEventListener("click", onOk);
+        $("dialogCancel").removeEventListener("click", onCancel);
+        document.removeEventListener("keydown", onKey);
+        resolve(result);
+      }
+      function onOk() { close(kind ? inp.value : true); }
+      function onCancel() { close(kind ? null : false); }
+      function onKey(e) {
+        if (e.repeat) return;
+        if (e.key === "Escape") onCancel();
+        if (e.key === "Enter") onOk();
+      }
+
+      $("dialogOk").addEventListener("click", onOk);
+      $("dialogCancel").addEventListener("click", onCancel);
+      document.addEventListener("keydown", onKey);
+    });
+  }
+
+  function askConfirm(title, text, okText, danger) {
+    return openDialog({ title: title, text: text, okText: okText || "OK", danger: danger });
+  }
+
+  function askNumber(title, text, okText) {
+    return openDialog({ title: title, text: text, input: "number", okText: okText || t("btn.save") });
+  }
+
+  function askText(title, text, value, okText, placeholder) {
+    return openDialog({ title: title, text: text, input: "text", value: value, okText: okText || t("btn.save"), placeholder: placeholder });
+  }
+
+  // ---------- SCREENS ----------
+  function showSetup() {
+    $("appScreen").classList.add("hidden");
+    $("setupScreen").classList.remove("hidden");
+    $("shopTypeSelect").innerHTML = Object.keys(SHOP_TYPES)
+      .map(k => `<option value="${k}">${esc(typeLabel(k))}</option>`).join("");
+  }
+
+  function updateBanner() {
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? t("greet.morning") : hour < 17 ? t("greet.afternoon") : t("greet.evening");
+    $("bannerHi").textContent = greeting + (shopName ? ", " + shopName : "") + "!";
+    $("bannerSub").textContent = typeLabel(shopType) + " · " +
+      new Date().toLocaleDateString(locale(), { weekday: "long", day: "numeric", month: "long" });
+  }
+
+  function fillStockFilters() {
+    const ty = SHOP_TYPES[shopType];
+    const catSel = $("stockCategory");
+    const prevCat = catSel.value;
+    const cats = ty.categories.slice();
+    items.forEach(i => { if (!cats.includes(i.category)) cats.push(i.category); });
+    catSel.innerHTML = `<option value="">${esc(t("filter.allCats"))}</option>` +
+      cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+    catSel.value = cats.includes(prevCat) ? prevCat : "";
+
+    const stSel = $("stockStatus");
+    const prevSt = stSel.value || "all";
+    stSel.innerHTML = [["all", "filter.allItems"], ["low", "filter.lowOnly"], ["out", "filter.outOnly"]]
+      .map(([v, k]) => `<option value="${v}">${esc(t(k))}</option>`).join("");
+    stSel.value = prevSt;
+  }
+
+  function setupAppLabels() {
+    const ty = SHOP_TYPES[shopType];
+    $("appTitle").textContent = "Shop Tracker - " + typeLabel(shopType);
+    fillSelect($("itemCategory"), ty.categories);
+    fillSelect($("itemUnit"), ty.units);
+    $("extraLabel").textContent = extraLabel(ty);
+    $("extraHead").textContent = extraLabel(ty);
+    $("itemExtra").type = ty.extra.type;
+    fillStockFilters();
+    updateBanner();
+  }
+
+  function showApp() {
+    $("setupScreen").classList.add("hidden");
+    $("appScreen").classList.remove("hidden");
+    setupAppLabels();
+    showTab("stock");
+  }
+
+  function showTab(tab, keepScroll) {
+    currentTab = tab;
+    ["stock", "sales", "debts", "reports"].forEach(n => {
+      const name = n.charAt(0).toUpperCase() + n.slice(1);
+      $(n + "Page").classList.toggle("hidden", n !== tab);
+      $("tab" + name).classList.toggle("active", n === tab);
+    });
+    if (!keepScroll) window.scrollTo(0, 0);
+    if (tab === "stock") renderTable();
+    if (tab === "sales") renderSalesPage();
+    if (tab === "debts") renderDebtsPage();
+    if (tab === "reports") renderReports();
+  }
+
+  function refreshApp() {
+    if ($("appScreen").classList.contains("hidden") || !shopType || !SHOP_TYPES[shopType]) return;
+    setupAppLabels();
+    showTab(currentTab, true);
+  }
+
+  async function editShopName() {
+    const name = await askText(
+      t("shop.title"), t("shop.text"), shopName, t("btn.save"), t("shop.ph")
+    );
+    if (name === null) return;
+
+    shopName = name.trim().slice(0, 60);
+    save();
+    updateBanner();
+    toast(shopName ? t("shop.saved") : t("shop.cleared"), "success");
+  }
+
+  // ---------- STOCK ----------
+  function addItem() {
+    const name = $("itemName").value.trim();
+    if (!name) { toast(t("toast.needName"), "error"); return; }
+
+    items.push({
+      id: Date.now(),
+      name: name,
+      category: $("itemCategory").value,
+      unit: $("itemUnit").value,
+      qty: Number($("itemQty").value) || 0,
+      buy: Number($("itemBuy").value) || 0,
+      sell: Number($("itemSell").value) || 0,
+      low: Number($("itemLow").value) || 0,
+      extra: $("itemExtra").value
+    });
+    save();
+
+    $("itemName").value = "";
+    $("itemQty").value = 0;
+    $("itemBuy").value = 0;
+    $("itemSell").value = 0;
+    $("itemExtra").value = "";
+    renderTable();
+    toast(t("toast.added"), "success");
+  }
+
+  function renderTable() {
+    const search = $("searchBox").value.toLowerCase().trim();
+    const cat = $("stockCategory").value;
+    const status = $("stockStatus").value;
+    const body = $("stockBody");
+
+    const shown = items.filter(i => {
+      if (search && !i.name.toLowerCase().includes(search)) return false;
+      if (cat && i.category !== cat) return false;
+      if (status === "low" && !(i.qty <= i.low)) return false;
+      if (status === "out" && i.qty > 0) return false;
+      return true;
+    });
+
+    if (shown.length === 0) {
+      body.innerHTML = emptyRow(7, items.length === 0 ? t("stock.empty") : t("stock.noMatch"));
+    } else {
+      body.innerHTML = shown.map(i => {
+        const isLow = i.qty <= i.low;
+        return `
+          <tr class="${isLow ? "low" : ""}">
+            <td><span class="item-name">${esc(i.name)}</span></td>
+            <td><span class="cat">${esc(i.category)}</span></td>
+            <td><span class="qty ${isLow ? "qty-low" : ""}">${i.qty} ${esc(i.unit)}</span>${isLow ? `<span class="badge">${esc(t("badge.low"))}</span>` : ""}</td>
+            <td>${money(i.buy)}</td>
+            <td>${money(i.sell)}</td>
+            <td>${esc(i.extra || "-")}</td>
+            <td>
+              <button class="small secondary" data-action="edit" data-id="${i.id}">${esc(t("btn.edit"))}</button>
+              <button class="small" data-action="restock" data-id="${i.id}">${esc(t("btn.restock"))}</button>
+              <button class="small danger" data-action="delete" data-id="${i.id}">${esc(t("btn.delete"))}</button>
+            </td>
+          </tr>`;
+      }).join("");
+    }
+
+    const totalValue = items.reduce((sum, i) => sum + i.qty * i.buy, 0);
+    const potential = items.reduce((sum, i) => sum + i.qty * (i.sell - i.buy), 0);
+    const lowCount = items.filter(i => i.qty <= i.low).length;
+
+    $("kpiItems").textContent = items.length;
+    $("kpiValue").textContent = money(totalValue);
+    $("kpiProfit").textContent = money(potential);
+    $("kpiLow").textContent = lowCount;
+  }
+
+  // ---------- EDIT ITEM ----------
+  function openEdit(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    editingId = id;
+
+    const ty = SHOP_TYPES[shopType];
+    const cats = ty.categories.includes(item.category) ? ty.categories : ty.categories.concat(item.category);
+    const units = ty.units.includes(item.unit) ? ty.units : ty.units.concat(item.unit);
+
+    fillSelect($("editCategory"), cats);
+    $("editCategory").value = item.category;
+    fillSelect($("editUnit"), units);
+    $("editUnit").value = item.unit;
+
+    $("editName").value = item.name;
+    $("editQty").value = item.qty;
+    $("editBuy").value = item.buy;
+    $("editSell").value = item.sell;
+    $("editLow").value = item.low;
+    $("editExtraLabel").textContent = extraLabel(ty);
+    $("editExtra").type = ty.extra.type;
+    $("editExtra").value = item.extra || "";
+
+    $("editModal").classList.remove("hidden");
+    setTimeout(() => $("editName").focus(), 50);
+  }
+
+  function closeEdit() {
+    $("editModal").classList.add("hidden");
+    editingId = null;
+  }
+
+  function saveEdit() {
+    const item = items.find(i => i.id === editingId);
+    if (!item) { closeEdit(); return; }
+
+    const name = $("editName").value.trim();
+    if (!name) { toast(t("toast.needName"), "error"); return; }
+
+    item.name = name;
+    item.category = $("editCategory").value;
+    item.unit = $("editUnit").value;
+    item.qty = Math.max(0, Number($("editQty").value) || 0);
+    item.buy = Math.max(0, Number($("editBuy").value) || 0);
+    item.sell = Math.max(0, Number($("editSell").value) || 0);
+    item.low = Math.max(0, Number($("editLow").value) || 0);
+    item.extra = $("editExtra").value;
+
+    save();
+    closeEdit();
+    renderTable();
+    toast(t("toast.itemUpdated"), "success");
+  }
+
+  // ---------- SALES ----------
+  function fillSaleItems() {
+    const select = $("saleItem");
+    const available = items.filter(i => i.qty > 0);
+    if (available.length === 0) {
+      select.innerHTML = `<option value="">${esc(t("sale.noStock"))}</option>`;
+    } else {
+      select.innerHTML = available.map(i =>
+        `<option value="${i.id}">${esc(i.name)} (${esc(t("sale.left", { n: i.qty, unit: i.unit }))})</option>`).join("");
+    }
+    updateSalePrice();
+  }
+
+  function fillCustomerList() {
+    const names = new Set();
+    sales.filter(s => s.payment === "credit").forEach(s => names.add(s.customer));
+    oldDebts.forEach(d => names.add(d.customer));
+    $("customerList").innerHTML = Array.from(names)
+      .map(n => `<option value="${esc(n)}"></option>`).join("");
+  }
+
+  function updateSalePrice() {
+    const item = items.find(i => i.id === Number($("saleItem").value));
+    $("salePrice").value = item ? item.sell : 0;
+    updateSaleTotal();
+  }
+
+  function updateSaleTotal() {
+    const total = (Number($("saleQty").value) || 0) * (Number($("salePrice").value) || 0);
+    $("saleTotal").textContent = t("sale.total", { amount: money(total) });
+  }
+
+  function recordSale() {
+    const item = items.find(i => i.id === Number($("saleItem").value));
+    if (!item) { toast(t("sale.pickItem"), "error"); return; }
+
+    const qty = Number($("saleQty").value);
+    const price = Number($("salePrice").value);
+    const payment = $("salePayment").value;
+    const customer = $("saleCustomer").value.trim();
+
+    if (!qty || qty <= 0) { toast(t("sale.badQty"), "error"); return; }
+    if (qty > item.qty) { toast(t("sale.notEnough", { n: item.qty, unit: item.unit }), "error"); return; }
+    if (payment === "credit" && !customer) { toast(t("sale.needCustomer"), "error"); return; }
+
+    item.qty -= qty;
+
+    sales.unshift({
+      id: Date.now(),
+      date: todayStr(),
+      itemId: item.id,
+      itemName: item.name,
+      unit: item.unit,
+      qty: qty,
+      price: price,
+      cost: item.buy,
+      total: qty * price,
+      payment: payment,
+      customer: payment === "credit" ? customer : ""
+    });
+    save();
+
+    $("saleQty").value = 1;
+    $("saleCustomer").value = "";
+    $("salePayment").value = "paid";
+    $("customerBox").classList.add("hidden");
+    renderSalesPage();
+    toast(t("sale.recorded", { amount: money(qty * price) }), "success");
+  }
+
+  function renderSalesPage() {
+    fillSaleItems();
+    fillCustomerList();
+
+    const today = sales.filter(s => s.date === todayStr());
+    const totalToday = today.reduce((sum, s) => sum + s.total, 0);
+    const profitToday = today.reduce((sum, s) => sum + (s.price - s.cost) * s.qty, 0);
+    const creditToday = today.filter(s => s.payment === "credit").reduce((sum, s) => sum + s.total, 0);
+
+    $("statToday").textContent = money(totalToday);
+    $("statProfit").textContent = money(profitToday);
+    $("statCredit").textContent = money(creditToday);
+    $("statCount").textContent = today.length;
+
+    renderSalesTable();
+  }
+
+  function renderSalesTable() {
+    const q = $("salesSearch").value.toLowerCase().trim();
+    const f = $("salesFilter").value;
+
+    const filtered = sales.filter(s => {
+      if (f !== "all" && s.payment !== f) return false;
+      if (q && !(s.itemName.toLowerCase().includes(q) || (s.customer || "").toLowerCase().includes(q))) return false;
+      return true;
+    });
+    const shown = filtered.slice(0, 50);
+
+    if (shown.length === 0) {
+      $("salesBody").innerHTML = emptyRow(7, sales.length === 0 ? t("sale.empty") : t("sale.noMatch"));
+    } else {
+      $("salesBody").innerHTML = shown.map(s => `
+        <tr>
+          <td>${s.date}</td>
+          <td><span class="item-name">${esc(s.itemName)}</span></td>
+          <td>${s.qty} ${esc(s.unit)}</td>
+          <td><b>${money(s.total)}</b></td>
+          <td><span class="tag ${s.payment}">${esc(s.payment === "paid" ? t("pay.paidShort") : t("pay.creditShort"))}</span></td>
+          <td>${esc(s.customer || "-")}</td>
+          <td>
+            <button class="small secondary" data-receipt="${s.id}">${esc(t("btn.receipt"))}</button>
+            <button class="small danger" data-undo="${s.id}">${esc(t("btn.undo"))}</button>
+          </td>
+        </tr>`).join("");
+    }
+
+    $("salesNote").textContent = filtered.length > 50
+      ? t("sale.showing", { shown: shown.length, total: filtered.length })
+      : "";
+  }
+
+  async function undoSale(id) {
+    const sale = sales.find(s => s.id === id);
+    if (!sale) return;
+
+    const ok = await askConfirm(t("undo.title"), t("undo.text"), t("undo.ok"), true);
+    if (!ok) return;
+
+    const item = items.find(i => i.id === sale.itemId);
+    if (item) item.qty += sale.qty;
+    sales = sales.filter(s => s.id !== id);
+    save();
+    renderSalesPage();
+    toast(t("undo.done"), "success");
+  }
+
+  // ---------- RECEIPT ----------
+  function openReceipt(id) {
+    const s = sales.find(x => x.id === id);
+    if (!s) return;
+
+    const when = new Date(s.id).toLocaleString(locale(), {
+      day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"
+    });
+    const isCredit = s.payment === "credit";
+
+    $("receiptPaper").innerHTML = `
+      <div class="r-shop">${esc(shopName || "Shop Tracker")}</div>
+      <div class="r-sub">${esc(t("receipt.title"))}</div>
+      <div class="r-line"></div>
+      <div class="r-row"><span>${esc(t("receipt.no"))}</span><span>#${String(s.id).slice(-6)}</span></div>
+      <div class="r-row"><span>${esc(t("receipt.date"))}</span><span>${esc(when)}</span></div>
+      ${isCredit ? `<div class="r-row"><span>${esc(t("receipt.customer"))}</span><span>${esc(s.customer)}</span></div>` : ""}
+      <div class="r-line"></div>
+      <div class="r-item">${esc(s.itemName)}</div>
+      <div class="r-row"><span>${s.qty} ${esc(s.unit)} x ${money(s.price)}</span><span>${money(s.total)}</span></div>
+      <div class="r-line"></div>
+      <div class="r-row r-total"><span>${esc(t("receipt.total"))}</span><span>${money(s.total)}</span></div>
+      <div class="r-row"><span>${esc(t("receipt.payment"))}</span><span>${esc(isCredit ? t("receipt.credit") : t("receipt.paid"))}</span></div>
+      <div class="r-line"></div>
+      <div class="r-foot">${esc(t("receipt.thanks"))}</div>`;
+
+    $("receiptModal").classList.remove("hidden");
+  }
+
+  function closeReceipt() {
+    $("receiptModal").classList.add("hidden");
+  }
+
+  // ---------- DEBTS ----------
+  function getDebtors() {
+    const map = {};
+
+    function entry(name) {
+      const k = name.trim().toLowerCase();
+      if (!map[k]) map[k] = { name: name.trim(), credit: 0, paid: 0 };
+      return map[k];
+    }
+
+    sales.filter(s => s.payment === "credit").forEach(s => { entry(s.customer).credit += s.total; });
+    oldDebts.forEach(d => { entry(d.customer).credit += d.amount; });
+    payments.forEach(p => { entry(p.customer).paid += p.amount; });
+
+    return Object.values(map)
+      .map(d => ({ name: d.name, credit: d.credit, paid: d.paid, balance: d.credit - d.paid }))
+      .filter(d => d.balance > 0)
+      .sort((a, b) => b.balance - a.balance);
+  }
+
+  function renderDebtsPage() {
+    lastDebtors = getDebtors();
+    fillCustomerList();
+
+    const totalOwed = lastDebtors.reduce((sum, d) => sum + d.balance, 0);
+    const collectedToday = payments
+      .filter(p => p.date === todayStr())
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    $("statOwed").textContent = money(totalOwed);
+    $("statDebtors").textContent = lastDebtors.length;
+    $("statCollected").textContent = money(collectedToday);
+
+    renderDebtsTable();
+
+    const activity = [
+      ...payments.map(p => ({ kind: "payment", id: p.id, date: p.date, customer: p.customer, amount: p.amount, note: "" })),
+      ...oldDebts.map(d => ({ kind: "olddebt", id: d.id, date: d.date, customer: d.customer, amount: d.amount, note: d.note || "" }))
+    ].sort((a, b) => b.id - a.id).slice(0, 30);
+
+    if (activity.length === 0) {
+      $("activityBody").innerHTML = emptyRow(6, t("debt.nothing"));
+    } else {
+      $("activityBody").innerHTML = activity.map(a => `
+        <tr>
+          <td>${a.date}</td>
+          <td><span class="tag ${a.kind === "payment" ? "paid" : "credit"}">${esc(a.kind === "payment" ? t("type.payment") : t("type.oldDebt"))}</span></td>
+          <td><span class="item-name">${esc(a.customer)}</span></td>
+          <td>${money(a.amount)}</td>
+          <td>${esc(a.note || "-")}</td>
+          <td><button class="small danger" data-kind="${a.kind}" data-id="${a.id}">${esc(t("btn.delete"))}</button></td>
+        </tr>`).join("");
+    }
+  }
+
+  function renderDebtsTable() {
+    const q = $("debtSearch").value.toLowerCase().trim();
+    const rows = lastDebtors
+      .map((d, index) => ({ d: d, index: index }))
+      .filter(r => !q || r.d.name.toLowerCase().includes(q));
+
+    if (rows.length === 0) {
+      $("debtsBody").innerHTML = emptyRow(5, lastDebtors.length === 0 ? t("debt.empty") : t("debt.noMatch"));
+    } else {
+      $("debtsBody").innerHTML = rows.map(r => `
+        <tr>
+          <td><div class="who"><span class="avatar">${esc(initials(r.d.name))}</span>${esc(r.d.name)}</div></td>
+          <td>${money(r.d.credit)}</td>
+          <td>${money(r.d.paid)}</td>
+          <td><b class="owed">${money(r.d.balance)}</b></td>
+          <td><button class="small" data-pay="${r.index}">${esc(t("btn.recordPayment"))}</button></td>
+        </tr>`).join("");
+    }
+  }
+
+  async function recordPayment(index) {
+    const debtor = lastDebtors[index];
+    if (!debtor) return;
+
+    const answer = await askNumber(
+      t("pay.title"),
+      t("pay.text", { name: debtor.name, amount: money(debtor.balance) }),
+      t("pay.ok")
+    );
+    if (answer === null) return;
+
+    const amount = Number(answer);
+    if (!amount || amount <= 0) { toast(t("pay.bad"), "error"); return; }
+    if (amount > debtor.balance) { toast(t("pay.tooMuch", { amount: money(debtor.balance) }), "error"); return; }
+
+    payments.push({ id: Date.now(), date: todayStr(), customer: debtor.name, amount: amount });
+    save();
+    renderDebtsPage();
+    toast(t("pay.done", { amount: money(amount) }), "success");
+  }
+
+  function addOldDebt() {
+    const customer = $("oldCustomer").value.trim();
+    const amount = Number($("oldAmount").value);
+
+    if (!customer) { toast(t("debt.needName"), "error"); return; }
+    if (!amount || amount <= 0) { toast(t("pay.bad"), "error"); return; }
+
+    oldDebts.push({
+      id: Date.now(),
+      date: todayStr(),
+      customer: customer,
+      amount: amount,
+      note: $("oldNote").value.trim()
+    });
+    save();
+
+    $("oldCustomer").value = "";
+    $("oldAmount").value = "";
+    $("oldNote").value = "";
+    renderDebtsPage();
+    toast(t("debt.added"), "success");
+  }
+
+  async function deleteActivity(kind, id) {
+    const ok = await askConfirm(t("delAct.title"), t("delAct.text"), t("btn.delete"), true);
+    if (!ok) return;
+
+    if (kind === "payment") payments = payments.filter(p => p.id !== id);
+    else oldDebts = oldDebts.filter(d => d.id !== id);
+
+    save();
+    renderDebtsPage();
+    toast(t("delAct.done"), "success");
+  }
+
+  // ---------- REPORTS ----------
+  function reportDays() {
+    const now = new Date();
+    const count = reportRange === "month" ? now.getDate() : Number(reportRange);
+    const days = [];
+    for (let i = count - 1; i >= 0; i--) {
+      days.push(new Date(now.getFullYear(), now.getMonth(), now.getDate() - i));
+    }
+    return days;
+  }
+
+  function renderReports() {
+    const days = reportDays();
+
+    const rows = days.map(d => {
+      const dk = dateKey(d);
+      const daySales = sales.filter(s => s.date === dk);
+      return {
+        date: d,
+        count: daySales.length,
+        total: daySales.reduce((a, s) => a + s.total, 0),
+        profit: daySales.reduce((a, s) => a + (s.price - s.cost) * s.qty, 0),
+        credit: daySales.filter(s => s.payment === "credit").reduce((a, s) => a + s.total, 0)
+      };
+    });
+
+    const totals = rows.reduce((tot, r) => ({
+      count: tot.count + r.count,
+      total: tot.total + r.total,
+      profit: tot.profit + r.profit,
+      credit: tot.credit + r.credit
+    }), { count: 0, total: 0, profit: 0, credit: 0 });
+
+    $("repTitle").textContent = t("rep." + reportRange);
+    $("repSales").textContent = money(totals.total);
+    $("repProfit").textContent = money(totals.profit);
+    $("repCredit").textContent = money(totals.credit);
+    $("repCount").textContent = totals.count;
+
+    document.querySelectorAll("#rangeSeg button").forEach(b => {
+      b.classList.toggle("active", b.dataset.range === reportRange);
+    });
+
+    // Bar chart
+    if (totals.count === 0) {
+      $("reportChart").innerHTML =
+        '<div class="empty" style="width:100%">' + EMPTY_ICON + "<div>" + esc(t("rep.none")) + "</div></div>";
+      $("reportNote").textContent = "";
+    } else {
+      const max = Math.max(...rows.map(r => r.total));
+      const showValues = rows.length <= 7;
+
+      $("reportChart").innerHTML = rows.map((r, i) => {
+        const h = r.total > 0 ? Math.max(Math.round(r.total / max * 160), 6) : 3;
+        const label = showValues
+          ? r.date.toLocaleDateString(locale(), { weekday: "short", day: "numeric" })
+          : (i % 5 === 0 ? r.date.toLocaleDateString(locale(), { day: "numeric", month: "short" }) : "");
+        const tip = t("rep.tip", {
+          date: r.date.toLocaleDateString(locale(), { weekday: "long", day: "numeric", month: "long" }),
+          amount: money(r.total),
+          profit: money(r.profit)
+        });
+        return `
+          <div class="bar-col" title="${esc(tip)}">
+            ${showValues ? `<span class="bar-val">${r.total > 0 ? shortMoney(r.total) : ""}</span>` : ""}
+            <div class="bar ${r.total > 0 ? "" : "zero"}" style="height:${h}px"></div>
+            <span class="bar-lbl">${esc(label)}</span>
+          </div>`;
+      }).join("");
+
+      const best = rows.reduce((a, b) => (b.total > a.total ? b : a), rows[0]);
+      $("reportNote").textContent = t("rep.best", {
+        date: best.date.toLocaleDateString(locale(), { weekday: "long", day: "numeric", month: "long" }),
+        amount: money(best.total)
+      });
+    }
+
+    // Best sellers and items that are not selling (same period)
+    const dayKeys = new Set(days.map(dateKey));
+    const inRange = sales.filter(s => dayKeys.has(s.date));
+
+    const byItem = {};
+    inRange.forEach(s => {
+      const k = s.itemName + "|" + s.unit;
+      if (!byItem[k]) byItem[k] = { name: s.itemName, unit: s.unit, qty: 0, total: 0, profit: 0 };
+      byItem[k].qty += s.qty;
+      byItem[k].total += s.total;
+      byItem[k].profit += (s.price - s.cost) * s.qty;
+    });
+
+    const top = Object.values(byItem).sort((a, b) => b.total - a.total).slice(0, 5);
+    const topMax = top.length ? Math.max(top[0].total, 1) : 1;
+
+    if (top.length === 0) {
+      $("topList").innerHTML = '<div class="empty-sm">' + esc(t("rep.noneShort")) + "</div>";
+    } else {
+      $("topList").innerHTML = top.map((r, i) => `
+        <div class="top-row">
+          <span class="top-rank">${i + 1}</span>
+          <div class="top-main">
+            <div class="top-name">${esc(r.name)} <small>${esc(t("top.sold", { n: r.qty, unit: r.unit }))}</small></div>
+            <div class="top-bar"><div style="width:${Math.max(4, Math.round(r.total / topMax * 100))}%"></div></div>
+          </div>
+          <div class="top-amt"><b>${money(r.total)}</b><small>${esc(t("top.profit", { amount: money(r.profit) }))}</small></div>
+        </div>`).join("");
+    }
+
+    const soldIds = new Set(inRange.map(s => s.itemId));
+    const slow = items
+      .filter(i => i.qty > 0 && !soldIds.has(i.id))
+      .sort((a, b) => b.qty * b.buy - a.qty * a.buy)
+      .slice(0, 5);
+
+    if (slow.length === 0) {
+      $("slowList").innerHTML = '<div class="empty-sm">' +
+        esc(items.length === 0 ? t("slow.noItems") : t("slow.none")) + "</div>";
+    } else {
+      $("slowList").innerHTML = slow.map((i, n) => `
+        <div class="top-row">
+          <span class="top-rank warn">${n + 1}</span>
+          <div class="top-main">
+            <div class="top-name">${esc(i.name)}</div>
+            <div class="muted-sm">${esc(t("slow.line", { n: i.qty, unit: i.unit, amount: money(i.qty * i.buy) }))}</div>
+          </div>
+        </div>`).join("");
+    }
+
+    // Day by day table (newest first, only days with sales)
+    const active = rows.filter(r => r.count > 0).reverse();
+    if (active.length === 0) {
+      $("reportBody").innerHTML = emptyRow(5, t("rep.noneShort"));
+    } else {
+      $("reportBody").innerHTML = active.map(r => `
+        <tr>
+          <td><span class="item-name">${esc(r.date.toLocaleDateString(locale(), { weekday: "short", day: "numeric", month: "short" }))}</span></td>
+          <td>${r.count}</td>
+          <td><b>${money(r.total)}</b></td>
+          <td>${money(r.profit)}</td>
+          <td>${money(r.credit)}</td>
+        </tr>`).join("");
+    }
+  }
+
+  // ---------- DOWNLOAD DATA (opens in Excel or Google Sheets) ----------
+  function csvCell(v) {
+    let s = v === null || v === undefined ? "" : String(v);
+    if (typeof v === "string" && /^[=+\-@]/.test(s)) s = "'" + s;
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+
+  function downloadCSV(filename, rows) {
+    const csv = "\uFEFF" + rows.map(r => r.map(csvCell).join(",")).join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast(t("dl.done"), "success");
+  }
+
+  function downloadStock() {
+    if (items.length === 0) { toast(t("dl.nothing"), "error"); return; }
+    const rows = [[t("th.name"), t("th.category"), t("f.qty"), t("f.unit"), t("f.buy"), t("f.sell"), t("f.low"), extraLabel(SHOP_TYPES[shopType])]];
+    items.forEach(i => rows.push([i.name, i.category, i.qty, i.unit, i.buy, i.sell, i.low, i.extra || ""]));
+    downloadCSV("stock-" + todayStr() + ".csv", rows);
+  }
+
+  function downloadSales() {
+    if (sales.length === 0) { toast(t("dl.nothing"), "error"); return; }
+    const rows = [[t("th.date"), t("th.item"), t("f.qty"), t("f.unit"), t("f.priceEach"), t("th.total"), t("th.profit"), t("th.payment"), t("th.customer")]];
+    sales.forEach(s => rows.push([
+      s.date, s.itemName, s.qty, s.unit, s.price, s.total,
+      (s.price - s.cost) * s.qty,
+      s.payment === "paid" ? t("pay.paidShort") : t("pay.creditShort"),
+      s.customer || ""
+    ]));
+    downloadCSV("sales-" + todayStr() + ".csv", rows);
+  }
+
+  function downloadDebts() {
+    const list = getDebtors();
+    if (list.length === 0) { toast(t("dl.nothing"), "error"); return; }
+    const rows = [[t("th.customer"), t("th.credit"), t("th.paid"), t("th.balance")]];
+    list.forEach(d => rows.push([d.name, d.credit, d.paid, d.balance]));
+    downloadCSV("debts-" + todayStr() + ".csv", rows);
+  }
+
+  // ---------- LANGUAGE SWITCH ----------
+  function applyLang() {
+    document.documentElement.lang = lang;
+    document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+    const other = lang === "en" ? "Kiswahili" : "English";
+    $("langBtn").textContent = other;
+    $("langBtnAuth").textContent = other;
+    setAuthMode(signupMode);
+  }
+
+  function toggleLang() {
+    lang = lang === "en" ? "sw" : "en";
+    localStorage.setItem("lang", lang);
+    applyLang();
+
+    if (!$("setupScreen").classList.contains("hidden")) {
+      const v = $("shopTypeSelect").value;
+      showSetup();
+      $("shopTypeSelect").value = v;
+    }
+    refreshApp();
+  }
+
+  // ---------- EVENTS ----------
+  $("continueBtn").addEventListener("click", () => {
+    shopType = $("shopTypeSelect").value;
+    save();
+    showApp();
+  });
+
+  $("changeTypeBtn").addEventListener("click", showSetup);
+  $("langBtn").addEventListener("click", toggleLang);
+  $("langBtnAuth").addEventListener("click", toggleLang);
+  $("addBtn").addEventListener("click", addItem);
+  $("tabStock").addEventListener("click", () => showTab("stock"));
+  $("tabSales").addEventListener("click", () => showTab("sales"));
+  $("tabDebts").addEventListener("click", () => showTab("debts"));
+  $("tabReports").addEventListener("click", () => showTab("reports"));
+  $("quickSale").addEventListener("click", () => showTab("sales"));
+  $("editShopName").addEventListener("click", editShopName);
+
+  // Search and filters
+  $("searchBox").addEventListener("input", renderTable);
+  $("stockCategory").addEventListener("change", renderTable);
+  $("stockStatus").addEventListener("change", renderTable);
+  $("salesSearch").addEventListener("input", renderSalesTable);
+  $("salesFilter").addEventListener("change", renderSalesTable);
+  $("debtSearch").addEventListener("input", renderDebtsTable);
+
+  // Downloads
+  $("dlStock").addEventListener("click", downloadStock);
+  $("dlSales").addEventListener("click", downloadSales);
+  $("dlDebts").addEventListener("click", downloadDebts);
+
+  $("rangeSeg").addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn || !btn.dataset.range) return;
+    reportRange = btn.dataset.range;
+    renderReports();
+  });
+
+  $("saleItem").addEventListener("change", updateSalePrice);
+  $("saleQty").addEventListener("input", updateSaleTotal);
+  $("salePrice").addEventListener("input", updateSaleTotal);
+  $("salePayment").addEventListener("change", () => {
+    $("customerBox").classList.toggle("hidden", $("salePayment").value !== "credit");
+  });
+  $("sellBtn").addEventListener("click", recordSale);
+
+  $("salesBody").addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    if (btn.dataset.undo) undoSale(Number(btn.dataset.undo));
+    if (btn.dataset.receipt) openReceipt(Number(btn.dataset.receipt));
+  });
+
+  $("debtsBody").addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (btn && btn.dataset.pay !== undefined) recordPayment(Number(btn.dataset.pay));
+  });
+
+  $("addOldBtn").addEventListener("click", addOldDebt);
+
+  $("activityBody").addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (btn && btn.dataset.kind) deleteActivity(btn.dataset.kind, Number(btn.dataset.id));
+  });
+
+  $("stockBody").addEventListener("click", async (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    const id = Number(btn.dataset.id);
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    if (btn.dataset.action === "edit") {
+      openEdit(id);
+      return;
+    }
+
+    if (btn.dataset.action === "restock") {
+      const answer = await askNumber(
+        t("restock.title", { name: item.name }),
+        t("restock.text", { unit: item.unit }),
+        t("restock.ok")
+      );
+      if (answer === null) return;
+      const add = Number(answer);
+      if (!add || add <= 0) { toast(t("restock.bad"), "error"); return; }
+
+      item.qty += add;
+      save();
+      renderTable();
+      toast(t("restock.done", { n: add, unit: item.unit, name: item.name }), "success");
+    }
+
+    if (btn.dataset.action === "delete") {
+      const ok = await askConfirm(t("del.title", { name: item.name }), t("del.text"), t("btn.delete"), true);
+      if (!ok) return;
+
+      items = items.filter(i => i.id !== id);
+      save();
+      renderTable();
+      toast(t("toast.itemDeleted"), "success");
+    }
+  });
+
+  // Edit item and receipt windows
+  $("editSave").addEventListener("click", saveEdit);
+  $("editCancel").addEventListener("click", closeEdit);
+  $("editModal").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && e.target.tagName === "INPUT") saveEdit();
+  });
+  $("receiptClose").addEventListener("click", closeReceipt);
+  $("receiptPrint").addEventListener("click", () => window.print());
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { closeEdit(); closeReceipt(); }
+  });
+
+  // ---------- LOGIN ----------
+  let signupMode = false;
+
+  function showAuth() {
+    $("setupScreen").classList.add("hidden");
+    $("appScreen").classList.add("hidden");
+    $("loadingScreen").classList.add("hidden");
+    $("authScreen").classList.remove("hidden");
+  }
+
+  function setAuthMode(isSignup) {
+    signupMode = isSignup;
+    $("authTitle").textContent = isSignup ? t("auth.createTitle") : t("auth.loginTitle");
+    $("authBtn").textContent = isSignup ? t("auth.create") : t("auth.login");
+    $("authSwitchText").textContent = isSignup ? t("auth.haveAccount") : t("auth.noAccount");
+    $("authSwitchBtn").textContent = isSignup ? t("auth.login") : t("auth.createOne");
+    $("authPassword").autocomplete = isSignup ? "new-password" : "current-password";
+    $("authError").textContent = "";
+  }
+
+  function friendlyError(err) {
+    const map = {
+      "auth/invalid-credential": "err.cred",
+      "auth/invalid-email": "err.email",
+      "auth/email-already-in-use": "err.exists",
+      "auth/weak-password": "err.weak",
+      "auth/too-many-requests": "err.many",
+      "auth/network-request-failed": "err.network",
+      "auth/unauthorized-domain": "err.domain"
+    };
+    return t(map[err.code] || "err.generic");
+  }
+
+  async function submitAuth() {
+    const email = $("authEmail").value.trim();
+    const password = $("authPassword").value;
+    if (!email || !password) { $("authError").textContent = t("auth.enterBoth"); return; }
+
+    $("authError").textContent = "";
+    $("authBtn").disabled = true;
+    try {
+      if (signupMode) await createUserWithEmailAndPassword(auth, email, password);
+      else await signInWithEmailAndPassword(auth, email, password);
+      $("authPassword").value = "";
+    } catch (err) {
+      $("authError").textContent = friendlyError(err);
+    }
+    $("authBtn").disabled = false;
+  }
+
+  async function forgotPassword() {
+    const email = $("authEmail").value.trim();
+    if (!email) { $("authError").textContent = t("auth.typeEmail"); return; }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      $("authError").textContent = "";
+      toast(t("auth.resetSent"), "success");
+    } catch (err) {
+      $("authError").textContent = friendlyError(err);
+    }
+  }
+
+  $("authBtn").addEventListener("click", submitAuth);
+  $("authPassword").addEventListener("keydown", (e) => { if (e.key === "Enter") submitAuth(); });
+  $("authSwitchBtn").addEventListener("click", () => setAuthMode(!signupMode));
+  $("forgotBtn").addEventListener("click", forgotPassword);
+  $("logoutBtn").addEventListener("click", () => signOut(auth));
+
+  // ---------- START ----------
+  applyLang();
+
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+
+    if (user) {
+      $("authScreen").classList.add("hidden");
+      $("loadingScreen").classList.remove("hidden");
+
+      try {
+        await loadUserData();
+      } catch (err) {
+        console.error(err);
+        $("loadingScreen").classList.add("hidden");
+        toast(err.code === "permission-denied" ? t("err.rules") : t("err.load"), "error");
+        await signOut(auth);
+        return;
+      }
+
+      $("loadingScreen").classList.add("hidden");
+      $("userEmail").textContent = user.email;
+      $("saveStatus").textContent = "";
+      if (shopType && SHOP_TYPES[shopType]) showApp(); else showSetup();
+    } else {
+      items = []; sales = []; payments = []; oldDebts = []; shopType = null; shopName = "";
+      closeEdit();
+      closeReceipt();
+      setAuthMode(false);
+      showAuth();
+    }
+  });
+</script>
+</body>
+</html>

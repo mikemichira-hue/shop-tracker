@@ -1,4 +1,4 @@
-../README.md# Shop Tracker
+# Shop Tracker
 
 A simple web app for small shops in Kenya to manage **stock, sales and customer debts** in one place. It works on a phone or a laptop, and each shopkeeper's data is saved online under their own login.
 
